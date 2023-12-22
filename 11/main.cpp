@@ -7,14 +7,24 @@
 
 using namespace std;
 
-vector<vector<char>> expandImage(vector<vector<char>>& image) {
+long long solve(vector<vector<char>>& image, int expandFactor) {
+    long long sum = 0;
     int m = image.size();
     int n = image[0].size();
-    int mExpand = m;
-    int nExpand = n;
+    
 
-    unordered_set<int> emptyRows;
-    unordered_set<int> emptyCols;
+    vector<pair<int, int>> galaxies;
+
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < n; j++) {
+            if (image[i][j] == '#') {
+                galaxies.push_back({i, j});
+            }
+        }
+    }
+
+    vector<bool> expandRow(m); // expandRow[i] is true if row i needs to be expanded
+    vector<bool> expandCol(n); // expandCol[j] is true if column j needs to be expanded
 
     for (int i = 0; i < m; i++) {
         bool isEmpty = true;
@@ -24,10 +34,7 @@ vector<vector<char>> expandImage(vector<vector<char>>& image) {
                 break;
             }
         }
-        if (isEmpty) {
-            mExpand++;
-            emptyRows.insert(mExpand-m+i);
-        }
+        expandRow[i] = isEmpty;
     }
 
     for (int j = 0; j < n; j++) {
@@ -38,59 +45,31 @@ vector<vector<char>> expandImage(vector<vector<char>>& image) {
                 break;
             }
         }
-        if (isEmpty) {
-            nExpand++;
-            emptyCols.insert(nExpand-n+j);
-        }
-    }
-
-    vector<vector<char>> expandedImage(mExpand, vector<char>(nExpand));
-    int curRow = 0;
-
-    for (int i = 0; i < mExpand; i++) {
-        int curCol = 0;
-        bool emptyRow = (emptyRows.find(i) != emptyRows.end());
-        for (int j = 0; j < nExpand; j++) {
-            bool emptyCol = (emptyCols.find(j) != emptyCols.end());
-            if (emptyRow) {
-                expandedImage[i][j] = '.';
-            } else if (emptyCol) {
-                expandedImage[i][j] = '.';
-            } else {
-                expandedImage[i][j] = image[curRow][curCol];
-                curCol++;
-            }
-        }
-
-        if (!emptyRow) curRow++;
-    }
-
-
-    return expandedImage;
-}
-
-int solve(vector<vector<char>>& image) {
-    int sum = 0;
-
-    vector<vector<char>> expandedImage = expandImage(image);
-    int m = expandedImage.size();
-    int n = expandedImage[0].size();
-    
-
-    vector<pair<int, int>> galaxies;
-
-    for (int i = 0; i < m; i++) {
-        for (int j = 0; j < n; j++) {
-            if (expandedImage[i][j] == '#') {
-                galaxies.push_back({i, j});
-            }
-        }
+        expandCol[j] = isEmpty;
     }
 
     for (int i = 0; i < galaxies.size(); i++) {
         for (int j = i+1; j < galaxies.size(); j++) {
-            sum += abs(galaxies[i].first-galaxies[j].first);
-            sum += abs(galaxies[i].second-galaxies[j].second);
+            int numRows = 0; // num of rows between two galaxies we are finding dist for
+            int numCols = 0; // num of cols between two galaxies we are finding dist for
+
+            int minRow = min(galaxies[i].first, galaxies[j].first);
+            int maxRow = max(galaxies[i].first, galaxies[j].first);
+
+            int minCol = min(galaxies[i].second, galaxies[j].second);
+            int maxCol = max(galaxies[i].second, galaxies[j].second);
+
+            for (int k = minRow+1; k < maxRow; k++) {
+                if (expandRow[k]) numRows++;
+            }
+
+            for (int k = minCol+1; k < maxCol; k++) {
+                if (expandCol[k]) numCols++;
+            }
+
+            // here we find distance between two galaxies while taking into account the expansion
+            sum += abs(galaxies[i].first-galaxies[j].first) + (numRows * (expandFactor-1));
+            sum += abs(galaxies[i].second-galaxies[j].second) + (numCols * (expandFactor-1));
         }
     }
 
@@ -111,8 +90,8 @@ int main() {
         }
     }
 
-    cout << "The solution to part one is " << solve(image) << endl;
-
+    cout << "The solution to part one is " << solve(image, 2) << endl;
+    cout << "The solution to part two is " << solve(image, 1000000) << endl;
 
     return 0;
 }
